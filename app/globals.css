@@ -828,22 +828,52 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 @media (max-width: 768px) {
   .topbar { display: none; }
-  .header .container { flex-wrap: wrap; }
+  .header .container { flex-wrap: wrap; gap: 8px; }
   .header-search { order: 3; max-width: 100%; flex-basis: 100%; margin-top: 8px; }
+  .header-actions { order: 2; }
   .nav-menu a { padding: 10px 12px; font-size: 13px; }
-  .hero-overlay h2 { font-size: 18px; }
+  .hero-overlay h2 { font-size: 16px; }
+  .hero-overlay p { font-size: 11px; }
+  .hero-category { font-size: 10px !important; padding: 2px 8px !important; }
+  .hero-main { min-height: 220px; }
+  .hero-side-card { min-height: 140px; }
   .news-grid { grid-template-columns: 1fr; }
+  .news-card-body h3 { font-size: 14px; }
+  .news-card-body p { font-size: 12px; }
   .gallery-grid { grid-template-columns: repeat(2, 1fr); }
   .gallery-item:first-child { grid-column: span 2; }
   .footer-grid { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
-  .logo-text h1 { font-size: 18px; }
+  .logo-text h1 { font-size: 16px; }
+  .logo-text span { font-size: 10px; }
+  .logo-img { width: 36px !important; height: 36px !important; }
+  .section-title h2 { font-size: 18px; }
+  .container { padding: 0 12px; }
+  .btn-epaper { font-size: 11px; padding: 6px 14px; }
+  .ad-banner-inner { font-size: 11px; padding: 12px; }
+  .sidebar-box-title { font-size: 13px; }
+  .trending-item h4 { font-size: 13px; }
+  .video-grid { gap: 12px; }
+  .video-thumb-info h4 { font-size: 12px; }
+  .cat-block-info h4 { font-size: 13px; }
+  .footer-about p { font-size: 12px; }
+  .footer-col h3 { font-size: 14px; }
+  .footer-col a { font-size: 12px; }
 }
 
 @media (max-width: 480px) {
   .hero-side { grid-template-columns: 1fr; }
+  .hero-overlay h2 { font-size: 14px; }
   .gallery-grid { grid-template-columns: 1fr; }
   .gallery-item:first-child { grid-column: span 1; grid-row: span 1; aspect-ratio: 4/3; }
-  .nav-menu { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .nav-menu a { white-space: nowrap; }
+  .nav-menu { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .nav-menu::-webkit-scrollbar { display: none; }
+  .nav-menu a { white-space: nowrap; font-size: 12px; padding: 8px 10px; }
+  .logo-text h1 { font-size: 14px; }
+  .header-search input { font-size: 13px; padding: 8px 12px; }
+  .section-title h2 { font-size: 16px; }
+  .ticker-label { font-size: 10px; padding: 4px 10px; }
+  .ticker-item { font-size: 12px; }
+  .news-card-body h3 { font-size: 13px; }
+  .footer-grid { gap: 20px; }
 }
