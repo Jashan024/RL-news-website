@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <clipPath id="clip">
+      <circle cx="120" cy="120" r="118"/>
+    </clipPath>
+  </defs>
+
+  <!-- Outer decorative arcs -->
+  <!-- Top blue arc (sweeping from right to top-left) -->
+  <path d="M 205 65 C 185 20, 130 -5, 65 15" fill="none" stroke="#2E2E8F" stroke-width="6.5" stroke-linecap="round"/>
+  <!-- Top black arc (just below/inside blue) -->
+  <path d="M 210 75 C 190 25, 125 2, 50 25" fill="none" stroke="#1A1A1A" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Bottom-right black arc -->
+  <path d="M 35 175 C 55 220, 120 245, 195 220" fill="none" stroke="#1A1A1A" stroke-width="5" stroke-linecap="round"/>
+  <!-- Bottom-right red arc (small accent) -->
+  <path d="M 178 215 C 200 205, 218 188, 225 165" fill="none" stroke="#E52528" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Letter L (blue/indigo) -->
+  <path d="
+    M 62 60
+    L 62 172
+    L 142 172
+    L 142 152
+    L 90 152
+    L 90 60
+    Z
+  " fill="#2E2E8F"/>
+
+  <!-- Letter R (red, overlapping L) -->
+  <path d="
+    M 92 48
+    L 92 172
+    L 118 172
+    L 118 128
+    L 138 128
+    L 164 172
+    L 194 172
+    L 163 123
+    C 178 116, 188 100, 188 82
+    C 188 58, 168 48, 142 48
+    Z
+    M 118 68
+    L 138 68
+    C 152 68, 162 75, 162 86
+    C 162 97, 152 104, 138 104
+    L 118 104
+    Z
+  " fill="#E52528"/>
+</svg>
