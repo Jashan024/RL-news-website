@@ -9,30 +9,52 @@ export default function AdsManager() {
   useEffect(() => { loadAds(); }, []);
 
   async function loadAds() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('ads')
       .select('*')
       .order('created_at', { ascending: false });
+    if (error) console.error('Failed to load ads:', error);
     setAds(data || []);
     setLoading(false);
   }
 
-  async function deleteAd(id, title) {
-    if (!confirm(`Delete ad "${title}"?`)) return;
-    await supabase.from('ads').delete().eq('id', id);
-    await supabase.from('activity_log').insert({ action: 'deleted', entity_type: 'ad', entity_title: title });
+  async function deleteAd(ad) {
+    if (!confirm(`Delete ad "${ad.title}"? This cannot be undone.`)) return;
+
+    // Delete image from storage if it's in our uploads bucket
+    if (ad.image_url && ad.image_url.includes('/storage/v1/object/public/uploads/')) {
+      try {
+        const path = ad.image_url.split('/storage/v1/object/public/uploads/')[1];
+        if (path) {
+          await supabase.storage.from('uploads').remove([path]);
+        }
+      } catch (e) {
+        console.warn('Could not delete image from storage:', e);
+      }
+    }
+
+    const { error } = await supabase.from('ads').delete().eq('id', ad.id);
+    if (error) {
+      alert('Failed to delete ad: ' + error.message);
+      return;
+    }
+
+    await supabase.from('activity_log').insert({
+      action: 'deleted', entity_type: 'ad', entity_title: ad.title,
+    });
+
     loadAds();
   }
 
   async function toggleActive(id, current) {
-    await supabase.from('ads').update({ is_active: !current }).eq('id', id);
+    const { error } = await supabase.from('ads').update({ is_active: !current }).eq('id', id);
+    if (error) { alert('Failed to update: ' + error.message); return; }
     loadAds();
   }
 
-  const timeAgo = (date) => {
-    if (!date) return '\u2014';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatDate = (date) => {
+    if (!date) return '—';
+    return new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   const isExpired = (date) => {
@@ -114,7 +136,7 @@ export default function AdsManager() {
                       <span style={{
                         padding: '3px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
                         background: pColor.bg, color: pColor.color,
-                      }}>{ad.placement || '\u2014'}</span>
+                      }}>{ad.placement || '—'}</span>
                     </td>
                     <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                       <button onClick={() => toggleActive(ad.id, ad.is_active)} style={{
@@ -125,17 +147,17 @@ export default function AdsManager() {
                       }}>{ad.is_active ? 'Active' : 'Inactive'}</button>
                     </td>
                     <td style={{ padding: '14px 16px', fontSize: 12 }}>
-                      {ad.expiry_date ? (
-                        <span style={{ color: isExpired(ad.expiry_date) ? '#C62828' : '#999' }}>
-                          {timeAgo(ad.expiry_date)}
-                          {isExpired(ad.expiry_date) && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#C62828' }}>EXPIRED</span>}
+                      {ad.expires_at ? (
+                        <span style={{ color: isExpired(ad.expires_at) ? '#C62828' : '#999' }}>
+                          {formatDate(ad.expires_at)}
+                          {isExpired(ad.expires_at) && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#C62828' }}>EXPIRED</span>}
                         </span>
                       ) : (
                         <span style={{ color: '#ccc' }}>No expiry</span>
                       )}
                     </td>
                     <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                      <button onClick={() => deleteAd(ad.id, ad.title)} style={{
+                      <button onClick={() => deleteAd(ad)} style={{
                         padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
                         background: '#FFEBEE', color: '#C62828', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                       }}>Delete</button>

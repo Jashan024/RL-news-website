@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../../lib/supabase';
 
@@ -7,6 +7,7 @@ export default function NewAd() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [existingAds, setExistingAds] = useState([]);
 
   const [form, setForm] = useState({
     title: '',
@@ -14,8 +15,20 @@ export default function NewAd() {
     click_url: '',
     placement: 'top',
     is_active: true,
-    expiry_date: '',
+    expires_at: '',
+    replace_existing: true,
   });
+
+  useEffect(() => {
+    loadExistingAds();
+  }, []);
+
+  async function loadExistingAds() {
+    const { data } = await supabase.from('ads').select('id, title, placement, image_url').eq('is_active', true);
+    setExistingAds(data || []);
+  }
+
+  const existingForPlacement = existingAds.filter(a => a.placement === form.placement);
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -33,23 +46,48 @@ export default function NewAd() {
 
   const handleSubmit = async () => {
     if (!form.title.trim()) { alert('Please enter a title'); return; }
+    if (!form.image_url.trim()) { alert('Please upload or enter an image URL'); return; }
     setSaving(true);
 
-    const adData = {
-      ...form,
-      expiry_date: form.expiry_date || null,
-    };
+    try {
+      // If replace_existing is checked, delete old ads in same placement
+      if (form.replace_existing && existingForPlacement.length > 0) {
+        for (const oldAd of existingForPlacement) {
+          // Delete old image from storage
+          if (oldAd.image_url && oldAd.image_url.includes('/storage/v1/object/public/uploads/')) {
+            try {
+              const path = oldAd.image_url.split('/storage/v1/object/public/uploads/')[1];
+              if (path) await supabase.storage.from('uploads').remove([path]);
+            } catch (e) {
+              console.warn('Could not delete old image:', e);
+            }
+          }
+          // Delete the old ad record
+          await supabase.from('ads').delete().eq('id', oldAd.id);
+        }
+      }
 
-    const { error } = await supabase.from('ads').insert(adData);
-    if (error) { alert('Error creating ad: ' + error.message); setSaving(false); return; }
+      const adData = {
+        title: form.title,
+        image_url: form.image_url,
+        click_url: form.click_url || null,
+        placement: form.placement,
+        is_active: form.is_active,
+        expires_at: form.expires_at || null,
+      };
 
-    await supabase.from('activity_log').insert({
-      action: 'created',
-      entity_type: 'ad',
-      entity_title: form.title,
-    });
+      const { error } = await supabase.from('ads').insert(adData);
+      if (error) { alert('Error creating ad: ' + error.message); setSaving(false); return; }
 
-    router.push('/admin/ads');
+      await supabase.from('activity_log').insert({
+        action: 'created', entity_type: 'ad', entity_title: form.title,
+      });
+
+      router.push('/admin/ads');
+    } catch (err) {
+      alert('Error: ' + err.message);
+      setSaving(false);
+    }
   };
 
   const inputStyle = {
@@ -94,7 +132,7 @@ export default function NewAd() {
             </div>
 
             <div>
-              <label style={labelStyle}>Banner Image</label>
+              <label style={labelStyle}>Banner Image *</label>
               {imagePreview || form.image_url ? (
                 <div style={{ marginBottom: 12 }}>
                   <img src={imagePreview || form.image_url} alt="Banner Preview" style={{
@@ -126,8 +164,8 @@ export default function NewAd() {
             <h3 style={{ fontSize: 15, fontWeight: 700, color: '#333', marginBottom: 16 }}>Save</h3>
             <button onClick={handleSubmit} disabled={saving} style={{
               width: '100%', padding: '12px', borderRadius: 8, fontSize: 13, fontWeight: 700,
-              border: 'none', background: '#D42A2A', color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 4px 12px rgba(212,42,42,0.25)',
+              border: 'none', background: saving ? '#999' : '#D42A2A', color: '#fff', cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit',
+              boxShadow: saving ? 'none' : '0 4px 12px rgba(212,42,42,0.25)',
             }}>{saving ? 'Saving...' : 'Create Ad'}</button>
           </div>
 
@@ -140,12 +178,35 @@ export default function NewAd() {
               <option value="sidebar">Sidebar</option>
               <option value="bottom">Bottom Banner</option>
             </select>
+
+            {existingForPlacement.length > 0 && (
+              <div style={{
+                marginTop: 14, padding: 12, background: '#FFF8E1', borderRadius: 8,
+                border: '1px solid #FFE082',
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#F57F17', marginBottom: 6 }}>
+                  ⚠️ {existingForPlacement.length} existing ad{existingForPlacement.length > 1 ? 's' : ''} in "{form.placement}"
+                </div>
+                <div style={{ fontSize: 11, color: '#795548', marginBottom: 8 }}>
+                  {existingForPlacement.map(a => a.title).join(', ')}
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#D84315', fontWeight: 600 }}>
+                  <input type="checkbox" checked={form.replace_existing}
+                    onChange={(e) => handleChange('replace_existing', e.target.checked)}
+                    style={{ width: 16, height: 16, accentColor: '#D42A2A' }} />
+                  Replace existing ads in this placement
+                </label>
+                <p style={{ fontSize: 10, color: '#999', marginTop: 4, marginLeft: 24 }}>
+                  Old ads will be deleted when you create this one
+                </p>
+              </div>
+            )}
           </div>
 
           <div style={cardStyle}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: '#333', marginBottom: 16 }}>Schedule</h3>
             <label style={labelStyle}>Expiry Date</label>
-            <input type="date" value={form.expiry_date} onChange={(e) => handleChange('expiry_date', e.target.value)}
+            <input type="date" value={form.expires_at} onChange={(e) => handleChange('expires_at', e.target.value)}
               style={inputStyle}
               onFocus={(e) => e.target.style.borderColor = '#D42A2A'} onBlur={(e) => e.target.style.borderColor = '#e8e8e8'} />
             <p style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>Leave empty for no expiry</p>
